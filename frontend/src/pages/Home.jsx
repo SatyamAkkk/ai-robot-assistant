@@ -66,35 +66,73 @@ function Home() {
 synth.speak(utterence);
   }
 
-  const handleCommand=(data)=>{
-    const {type,userInput,response}=data
-      speak(response);
+  // const handleCommand=(data)=>{
+  //   const {type,userInput,response}=data
+  //     speak(response);
     
-    if (type === 'google-search') {
-      const query = encodeURIComponent(userInput);
-      window.open(`https://www.google.com/search?q=${query}`, '_blank');
-    }
-     if (type === 'calculator-open') {
+  //   if (type === 'google-search') {
+  //     const query = encodeURIComponent(userInput);
+  //     window.open(`https://www.google.com/search?q=${query}`, '_blank');
+  //   }
+  //    if (type === 'calculator-open') {
   
-      window.open(`https://www.google.com/search?q=calculator`, '_blank');
-    }
-     if (type === "instagram-open") {
-      window.open(`https://www.instagram.com/`, '_blank');
-    }
-    if (type ==="facebook-open") {
-      window.open(`https://www.facebook.com/`, '_blank');
-    }
-     if (type ==="weather-show") {
-      window.open(`https://www.google.com/search?q=weather`, '_blank');
-    }
+  //     window.open(`https://www.google.com/search?q=calculator`, '_blank');
+  //   }
+  //    if (type === "instagram-open") {
+  //     window.open(`https://www.instagram.com/`, '_blank');
+  //   }
+  //   if (type ==="facebook-open") {
+  //     window.open(`https://www.facebook.com/`, '_blank');
+  //   }
+  //    if (type ==="weather-show") {
+  //     window.open(`https://www.google.com/search?q=weather`, '_blank');
+  //   }
 
-    if (type === 'youtube-search' || type === 'youtube-play') {
-      const query = encodeURIComponent(userInput);
-      window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+  //   if (type === 'youtube-search' || type === 'youtube-play') {
+  //     const query = encodeURIComponent(userInput);
+  //     window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+  //   }
+
+  // }
+
+const handleCommand = (data) => {
+  if (!data) return;
+  const { type, userInput, response } = data;
+
+  // Speak Response First
+  if (response) speak(response);
+
+  const query = encodeURIComponent(userInput || "");
+
+  // Fix window.open blocking by checking types carefully
+  setTimeout(() => {
+    switch (type) {
+      case 'google-search':
+        window.open(`https://www.google.com/search?q=${query}`, '_blank');
+        break;
+      case 'calculator-open':
+        window.open('https://www.google.com/search?q=calculator', '_blank');
+        break;
+      case 'instagram-open':
+        window.open('https://www.instagram.com/', '_blank');
+        break;
+      case 'facebook-open':
+        window.open('https://www.facebook.com/', '_blank');
+        break;
+      case 'weather-show':
+        window.open('https://www.google.com/search?q=weather', '_blank');
+        break;
+      case 'youtube-search':
+      case 'youtube-play':
+        window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+        break;
+      default:
+        console.log("General response or unknown type:", type);
+        break;
     }
-
-  }
-
+  }, 100);
+};
+  
 useEffect(() => {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
@@ -161,21 +199,42 @@ useEffect(() => {
     }
   };
 
-  recognition.onresult = async (e) => {
-    const transcript = e.results[e.results.length - 1][0].transcript.trim();
-    if (transcript.toLowerCase().includes(userData.assistantName.toLowerCase())) {
-      setAiText("");
-      setUserText(transcript);
-      recognition.stop();
-      isRecognizingRef.current = false;
-      setListening(false);
-      const data = await getGeminiResponse(transcript);
-      handleCommand(data);
-      setAiText(data.response);
-      setUserText("");
-    }
-  };
+  // recognition.onresult = async (e) => {
+  //   const transcript = e.results[e.results.length - 1][0].transcript.trim();
+  //   if (transcript.toLowerCase().includes(userData.assistantName.toLowerCase())) {
+  //     setAiText("");
+  //     setUserText(transcript);
+  //     recognition.stop();
+  //     isRecognizingRef.current = false;
+  //     setListening(false);
+  //     const data = await getGeminiResponse(transcript);
+  //     handleCommand(data);
+  //     setAiText(data.response);
+  //     setUserText("");
+  //   }
+  // };
 
+  recognition.onresult = async (e) => {
+  const transcript = e.results[e.results.length - 1][0].transcript.trim();
+
+  if (transcript.length > 0) {
+    setUserText(transcript);
+    setAiText("Thinking...");
+
+    try { recognition.stop(); } catch (err) {}
+    isRecognizingRef.current = false;
+
+    const data = await getGeminiResponse(transcript, userData?.assistantName, userData?.name);
+    
+    console.log("Gemini Output Data:", data); // Check backend output
+
+    if (data) {
+      setUserText("");
+      setAiText(data.response || "");
+      handleCommand(data);
+    }
+  }
+};
 
     const greeting = new SpeechSynthesisUtterance(`Hello ${userData.name}, what can I help you with?`);
     greeting.lang = 'hi-IN';
