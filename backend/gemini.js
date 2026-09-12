@@ -60,18 +60,92 @@
 // export default geminiResponse
 
 
-import axios from "axios"
+// import axios from "axios"
 
-const geminiResponse = async (command, assistantName, userName) => {
+// const geminiResponse = async (command, assistantName, userName) => {
+//   try {
+//     const apiUrl = process.env.GEMINI_API_URL
+//     const prompt = `You are a virtual assistant named ${assistantName} created by ${userName}. 
+// You are not Google. You will now behave like a voice-enabled assistant.
+
+// Your task is to understand the user's natural language input and respond with a JSON object like this:
+
+// {
+//   "type": "general" | "google-search" | "youtube-search" | "youtube-play" | "get-time" | "get-date" | "get-day" | "get-month"|"calculator-open" | "instagram-open" |"facebook-open" |"weather-show",
+//   "userInput": "<original user input>",
+//   "response": "<a short spoken response to read out loud to the user>"
+// }
+
+// Instructions:
+// - "type": determine the intent of the user.
+// - "userInput": original sentence the user spoke (remove assistant name if present).
+// - "response": A short voice-friendly reply.
+
+// Type meanings:
+// - "general": factual/informational question.
+// - "google-search": search Google.
+// - "youtube-search": search YouTube.
+// - "youtube-play": play video/song.
+// - "calculator-open": open calculator.
+// - "instagram-open": open instagram.
+// - "facebook-open": open facebook.
+// - "weather-show": check weather.
+
+// Important:
+// - Response MUST be valid JSON only.
+
+// User Input: ${command}`;
+
+//     const result = await axios.post(apiUrl, {
+//       contents: [{
+//         parts: [{ text: prompt }]
+//       }]
+//     })
+
+//     // Raw response from Gemini
+//     let rawText = result.data.candidates[0].content.parts[0].text;
+
+//     // Clean Markdown code blocks (```json ... ```)
+//     rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+
+//     // Parse JSON String to Real Object
+//     const parsedData = JSON.parse(rawText);
+
+//     return parsedData; // Returns { type, userInput, response }
+
+//   } catch (error) {
+//     console.log("Gemini Backend Error:", error);
+//     return {
+//       type: "general",
+//       userInput: command,
+//       response: "Sorry bro, server se connection me issue aa raha hai."
+//     };
+//   }
+// }
+
+// export default geminiResponse
+
+
+
+
+
+import axios from "axios";
+
+const geminiResponse = async (command, assistantName = "Assistant", userName = "User") => {
   try {
-    const apiUrl = process.env.GEMINI_API_URL
+    const apiUrl = process.env.GEMINI_API_URL;
+
+    if (!apiUrl) {
+      throw new Error("GEMINI_API_URL is missing in environment variables");
+    }
+
     const prompt = `You are a virtual assistant named ${assistantName} created by ${userName}. 
 You are not Google. You will now behave like a voice-enabled assistant.
 
 Your task is to understand the user's natural language input and respond with a JSON object like this:
 
 {
-  "type": "general" | "google-search" | "youtube-search" | "youtube-play" | "get-time" | "get-date" | "get-day" | "get-month"|"calculator-open" | "instagram-open" |"facebook-open" |"weather-show",
+  "type": "general" | "google-search" | "youtube-search" | "youtube-play" | "get-time" | "get-date" | "get-day" | "get-month" | "calculator-open" | "instagram-open" | "facebook-open" | "weather-show",
   "userInput": "<original user input>",
   "response": "<a short spoken response to read out loud to the user>"
 }
@@ -79,20 +153,10 @@ Your task is to understand the user's natural language input and respond with a 
 Instructions:
 - "type": determine the intent of the user.
 - "userInput": original sentence the user spoke (remove assistant name if present).
-- "response": A short voice-friendly reply.
-
-Type meanings:
-- "general": factual/informational question.
-- "google-search": search Google.
-- "youtube-search": search YouTube.
-- "youtube-play": play video/song.
-- "calculator-open": open calculator.
-- "instagram-open": open instagram.
-- "facebook-open": open facebook.
-- "weather-show": check weather.
+- "response": A short voice-friendly reply in Hinglish.
 
 Important:
-- Response MUST be valid JSON only.
+- Response MUST be pure valid JSON only.
 
 User Input: ${command}`;
 
@@ -100,27 +164,29 @@ User Input: ${command}`;
       contents: [{
         parts: [{ text: prompt }]
       }]
-    })
+    });
 
-    // Raw response from Gemini
-    let rawText = result.data.candidates[0].content.parts[0].text;
+    let rawText = result.data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    // Clean Markdown code blocks (```json ... ```)
+    if (!rawText) {
+      throw new Error("No text response from Gemini API");
+    }
+
+    // Clean standard markdown wrapper
     rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
 
-    // Parse JSON String to Real Object
+    // Direct Safe Parsing
     const parsedData = JSON.parse(rawText);
-
-    return parsedData; // Returns { type, userInput, response }
+    return parsedData;
 
   } catch (error) {
-    console.log("Gemini Backend Error:", error);
+    console.error("Gemini Backend Error:", error);
     return {
       type: "general",
       userInput: command,
-      response: "Sorry bro, server se connection me issue aa raha hai."
+      response: "Sorry bro, server connection issue hai."
     };
   }
-}
+};
 
-export default geminiResponse
+export default geminiResponse;
