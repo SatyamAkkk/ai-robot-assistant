@@ -12,7 +12,7 @@ app.use(cors({
     origin:"https://ai-robot-assistant-frontend.onrender.com",
     credentials:true
 }))
-const port=process.env.PORT || 5000
+const port=process.env.PORT || 8000
 app.use(express.json())
 app.use(cookieParser())
 app.use("/api/auth",authRouter)
